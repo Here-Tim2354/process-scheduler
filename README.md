@@ -14,8 +14,8 @@
 
 | 文件 | 适用环境 |
 | --- | --- |
-| `process-scheduler-0.1.0-win-x64-portable.exe` | Windows 10 / 11，64 位系统 |
-| `process-scheduler-0.1.0-win-ia32-portable.exe` | Windows 10 / 11，32 位系统 |
+| `process-scheduler-0.1.1-win-x64-portable.exe` | Windows 10 / 11，64 位系统 |
+| `process-scheduler-0.1.1-win-ia32-portable.exe` | Windows 10 / 11，32 位系统 |
 
 本项目只分发 portable 版本。下载后双击运行，不需要安装。
 

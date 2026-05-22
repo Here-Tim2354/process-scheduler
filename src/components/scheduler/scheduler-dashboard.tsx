@@ -6,6 +6,7 @@ import {
   CirclePause,
   CircleHelp,
   ChevronDown,
+  GitFork,
   ListRestart,
   Play,
   RotateCcw,
@@ -544,7 +545,7 @@ export function SchedulerDashboard() {
                     <CardHeader>
                       <CardTitle>调度时间线</CardTitle>
                       <CardDescription>
-                        连续运行片段已合并，共 {simulator.timeline.length} 次处理器占用
+                        共 {simulator.timeline.length} 次处理器占用
                       </CardDescription>
                     </CardHeader>
                     <CardContent className={tableViewportClassName}>
@@ -661,7 +662,24 @@ function ProjectInfoDialog() {
             label="验证与分发"
             value="Vitest / Playwright / Electron"
           />
+          <ProjectInfoRow
+            label="核心文件"
+            value="src/lib/scheduler/core.ts"
+          />
         </div>
+        <Button
+          className="w-fit"
+          render={
+            <a
+              href="https://github.com/Here-Tim2354/process-scheduler"
+              target="_blank"
+              rel="noreferrer"
+            />
+          }
+        >
+            <GitFork aria-hidden="true" />
+            GitHub
+        </Button>
       </DialogContent>
     </Dialog>
   );
@@ -1075,7 +1093,11 @@ function compactTimelineSegments(
 ): CompactedTimelineSegment[] {
   return segments.reduce<CompactedTimelineSegment[]>((items, segment) => {
     const previous = items[items.length - 1];
-    if (previous && previous.pid === segment.pid && previous.end === segment.start) {
+    if (
+      previous &&
+      previous.pid === segment.pid &&
+      previous.end === segment.start
+    ) {
       return [
         ...items.slice(0, -1),
         {

@@ -44,6 +44,9 @@ await page.waitForTimeout(800);
 await page.getByRole("button", { name: "项目信息" }).click();
 await page.getByRole("heading", { name: "项目信息" }).waitFor();
 const projectInfoText = await page.getByRole("dialog").innerText();
+const githubHref = await page
+  .getByRole("link", { name: "GitHub" })
+  .getAttribute("href");
 await page.getByRole("button", { name: "关闭" }).click();
 const bodyText = await page.locator("body").innerText();
 await page.screenshot({ path: desktopPath, fullPage: true });
@@ -80,6 +83,7 @@ console.log(
         projectInfoText.includes("Next.js") &&
         projectInfoText.includes("Electron") &&
         projectInfoText.includes("src/lib/scheduler/core.ts"),
+      githubHref,
       randomPreservesCapacity: capacityAfterRandom === "12",
       algorithmResults,
       desktopScreenshot: desktopPath,

@@ -1,6 +1,6 @@
 {
   "name": "process-scheduler",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Single-processor process scheduling simulator.",
   "author": "Tim2354",
   "private": true,
