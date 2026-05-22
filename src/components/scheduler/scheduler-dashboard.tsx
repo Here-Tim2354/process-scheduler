@@ -36,7 +36,11 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+  Collapsible,
+  CollapsiblePanel,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
   Dialog,
   DialogContent,
@@ -63,7 +67,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   ALGORITHM_LABELS,
   DEFAULT_CONFIG,
@@ -72,7 +80,12 @@ import {
   getQueueSnapshot,
   normalizeConfig,
 } from "@/lib/scheduler/core";
-import type { FutureProcess, Pcb, SchedulerAlgorithm, SchedulerConfig } from "@/lib/scheduler/types";
+import type {
+  FutureProcess,
+  Pcb,
+  SchedulerAlgorithm,
+  SchedulerConfig,
+} from "@/lib/scheduler/types";
 import { useSchedulerStore } from "@/stores/scheduler-store";
 
 const configSchema = z
@@ -128,7 +141,10 @@ export function SchedulerDashboard() {
 
   const candidateSlot = simulator.readyQueue[0] ?? null;
   const readyProcesses = getQueueSnapshot(simulator, simulator.readyQueue);
-  const terminatedProcesses = getQueueSnapshot(simulator, simulator.terminatedQueue);
+  const terminatedProcesses = getQueueSnapshot(
+    simulator,
+    simulator.terminatedQueue,
+  );
   const knownProcesses = getAllKnownProcesses(simulator);
   const isRoundComplete =
     simulator.readyQueue.length === 0 &&
@@ -141,7 +157,9 @@ export function SchedulerDashboard() {
     turnaround: metric.turnaroundTime,
   }));
   const usedPercent = Math.round(
-    ((simulator.config.capacity - simulator.freeQueue.length) / simulator.config.capacity) * 100,
+    ((simulator.config.capacity - simulator.freeQueue.length) /
+      simulator.config.capacity) *
+      100,
   );
 
   const average = useMemo(() => {
@@ -149,9 +167,13 @@ export function SchedulerDashboard() {
       return { waiting: 0, turnaround: 0 };
     }
     return {
-      waiting: round(metrics.reduce((sum, item) => sum + item.waitingTime, 0) / metrics.length),
+      waiting: round(
+        metrics.reduce((sum, item) => sum + item.waitingTime, 0) /
+          metrics.length,
+      ),
       turnaround: round(
-        metrics.reduce((sum, item) => sum + item.turnaroundTime, 0) / metrics.length,
+        metrics.reduce((sum, item) => sum + item.turnaroundTime, 0) /
+          metrics.length,
       ),
     };
   }, [metrics]);
@@ -206,7 +228,9 @@ export function SchedulerDashboard() {
               <Activity aria-hidden="true" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold tracking-tight">进程调度实验台</h1>
+              <h1 className="text-xl font-semibold tracking-tight">
+                进程调度实验台
+              </h1>
               <p className="text-sm text-muted-foreground">
                 Tick {simulator.tick}
                 {isRoundComplete ? " / 已完成本轮任务" : ""}
@@ -214,15 +238,28 @@ export function SchedulerDashboard() {
             </div>
           </div>
           <div className="flex flex-wrap items-center justify-start gap-2 lg:justify-end">
-            <ActionButton label="随机" onClick={randomizeAndApplyConfig} icon={Shuffle} />
-            <ActionButton label="单步" onClick={() => step(true)} icon={SkipForward} />
+            <ActionButton
+              label="随机"
+              onClick={randomizeAndApplyConfig}
+              icon={Shuffle}
+            />
+            <ActionButton
+              label="单步"
+              onClick={() => step(true)}
+              icon={SkipForward}
+            />
             <ActionButton
               label={isAutoRunning ? "暂停" : "自动运行"}
               onClick={() => setIsAutoRunning((value) => !value)}
               icon={isAutoRunning ? CirclePause : Play}
               variant={isAutoRunning ? "outline" : "default"}
             />
-            <ActionButton label="运行到底" onClick={runToEnd} icon={ListRestart} variant="outline" />
+            <ActionButton
+              label="运行到底"
+              onClick={runToEnd}
+              icon={ListRestart}
+              variant="outline"
+            />
             <ActionButton
               label="重置"
               onClick={form.handleSubmit(applyConfig)}
@@ -238,16 +275,24 @@ export function SchedulerDashboard() {
             <Card>
               <CardHeader>
                 <CardTitle>算法</CardTitle>
-                <CardDescription>{ALGORITHM_LABELS[simulator.algorithm]}</CardDescription>
+                <CardDescription>
+                  {ALGORITHM_LABELS[simulator.algorithm]}
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <Select
                   value={simulator.algorithm}
-                  onValueChange={(value) => setAlgorithm(value as SchedulerAlgorithm)}
+                  onValueChange={(value) =>
+                    setAlgorithm(value as SchedulerAlgorithm)
+                  }
                 >
                   <SelectTrigger className="w-full" aria-label="选择调度算法">
                     <SelectValue>
-                      {(value) => (value ? ALGORITHM_LABELS[value as SchedulerAlgorithm] : "选择调度算法")}
+                      {(value) =>
+                        value
+                          ? ALGORITHM_LABELS[value as SchedulerAlgorithm]
+                          : "选择调度算法"
+                      }
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
@@ -273,7 +318,12 @@ export function SchedulerDashboard() {
                 <Progress value={usedPercent} />
                 <div className="grid grid-cols-3 gap-2 text-sm">
                   <Stat label="容量" value={simulator.config.capacity} />
-                  <Stat label="已用" value={simulator.config.capacity - simulator.freeQueue.length} />
+                  <Stat
+                    label="已用"
+                    value={
+                      simulator.config.capacity - simulator.freeQueue.length
+                    }
+                  />
                   <Stat label="空闲" value={simulator.freeQueue.length} />
                 </div>
                 {simulator.error ? (
@@ -304,15 +354,46 @@ export function SchedulerDashboard() {
                 </CardHeader>
                 <CollapsiblePanel>
                   <CardContent className="pt-0">
-                    <form className="flex flex-col gap-4" onSubmit={form.handleSubmit(applyConfig)}>
+                    <form
+                      className="flex flex-col gap-4"
+                      onSubmit={form.handleSubmit(applyConfig)}
+                    >
                       <div className="grid grid-cols-2 gap-3">
-                        <NumberField label="PCB 容量" name="capacity" form={form} />
-                        <NumberField label="初始进程" name="initialProcesses" form={form} />
-                        <NumberField label="优先数下限" name="minPriority" form={form} />
-                        <NumberField label="优先数上限" name="maxPriority" form={form} />
-                        <NumberField label="时间下限" name="minTime" form={form} />
-                        <NumberField label="时间上限" name="maxTime" form={form} />
-                        <NumberField label="动态概率" name="dynamicArrivalChance" form={form} />
+                        <NumberField
+                          label="PCB 容量"
+                          name="capacity"
+                          form={form}
+                        />
+                        <NumberField
+                          label="初始进程"
+                          name="initialProcesses"
+                          form={form}
+                        />
+                        <NumberField
+                          label="优先数下限"
+                          name="minPriority"
+                          form={form}
+                        />
+                        <NumberField
+                          label="优先数上限"
+                          name="maxPriority"
+                          form={form}
+                        />
+                        <NumberField
+                          label="时间下限"
+                          name="minTime"
+                          form={form}
+                        />
+                        <NumberField
+                          label="时间上限"
+                          name="maxTime"
+                          form={form}
+                        />
+                        <NumberField
+                          label="动态概率"
+                          name="dynamicArrivalChance"
+                          form={form}
+                        />
                         <SeedField form={form} />
                       </div>
                       {Object.values(form.formState.errors)[0]?.message ? (
@@ -335,7 +416,9 @@ export function SchedulerDashboard() {
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <CardTitle>名词</CardTitle>
-                      <CardDescription>展开查看 algorithm 和 field 解释</CardDescription>
+                      <CardDescription>
+                        展开查看 algorithm 和 field 解释
+                      </CardDescription>
                     </div>
                     <CollapsibleTrigger
                       aria-label="展开或收起名词说明"
@@ -432,7 +515,9 @@ export function SchedulerDashboard() {
                               key={segment.id}
                               className="min-w-24 rounded-md border bg-muted px-3 py-2 font-mono text-sm"
                             >
-                              <div className="font-semibold">P{segment.pid}</div>
+                              <div className="font-semibold">
+                                P{segment.pid}
+                              </div>
                               <div className="text-muted-foreground">
                                 {segment.start} - {segment.end}
                               </div>
@@ -447,7 +532,8 @@ export function SchedulerDashboard() {
                     <CardHeader>
                       <CardTitle>统计</CardTitle>
                       <CardDescription>
-                        平均等待 {average.waiting} / 平均周转 {average.turnaround}
+                        平均等待 {average.waiting} / 平均周转{" "}
+                        {average.turnaround}
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -457,11 +543,27 @@ export function SchedulerDashboard() {
                         ) : (
                           <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={chartData}>
-                              <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                              <XAxis dataKey="pid" tickLine={false} axisLine={false} />
-                              <YAxis tickLine={false} axisLine={false} allowDecimals={false} />
+                              <CartesianGrid
+                                strokeDasharray="3 3"
+                                vertical={false}
+                              />
+                              <XAxis
+                                dataKey="pid"
+                                tickLine={false}
+                                axisLine={false}
+                              />
+                              <YAxis
+                                tickLine={false}
+                                axisLine={false}
+                                allowDecimals={false}
+                              />
                               <ChartTooltip />
-                              <Bar dataKey="waiting" name="等待" fill="#6b7280" radius={[4, 4, 0, 0]} />
+                              <Bar
+                                dataKey="waiting"
+                                name="等待"
+                                fill="#6b7280"
+                                radius={[4, 4, 0, 0]}
+                              />
                               <Bar
                                 dataKey="turnaround"
                                 name="周转"
@@ -495,7 +597,12 @@ function ProjectInfoDialog() {
     <Dialog>
       <DialogTrigger
         render={
-          <Button type="button" variant="outline" size="icon" aria-label="项目信息" />
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            aria-label="项目信息"
+          />
         }
       >
         <CircleHelp aria-hidden="true" />
@@ -504,7 +611,8 @@ function ProjectInfoDialog() {
         <DialogHeader>
           <DialogTitle>项目信息</DialogTitle>
           <DialogDescription>
-            单处理器进程调度模拟器，用于展示 PCB、就绪队列、运行指针和四种调度算法。
+            单处理器进程调度模拟器，用于展示
+            PCB、就绪队列、运行指针和四种调度算法。
           </DialogDescription>
         </DialogHeader>
 
@@ -512,14 +620,23 @@ function ProjectInfoDialog() {
           <ProjectInfoRow label="核心" value="Next.js / React / TypeScript" />
           <ProjectInfoRow label="状态" value="Zustand" />
           <ProjectInfoRow label="表单" value="React Hook Form / Zod" />
-          <ProjectInfoRow label="UI" value="Tailwind CSS / shadcn-ui / Base UI / lucide-react" />
+          <ProjectInfoRow
+            label="UI"
+            value="Tailwind CSS / shadcn-ui / Base UI / lucide-react"
+          />
           <ProjectInfoRow label="动效与图表" value="motion / Recharts" />
-          <ProjectInfoRow label="验证与分发" value="Vitest / Playwright / Electron" />
+          <ProjectInfoRow
+            label="验证与分发"
+            value="Vitest / Playwright / Electron"
+          />
         </div>
 
         <div className="rounded-md border bg-muted/30 px-3 py-2 text-sm leading-6 text-muted-foreground">
-          调度核心位于 <span className="font-mono text-foreground">src/lib/scheduler/core.ts</span>，
-          UI 只负责展示和触发状态变化。
+          调度核心位于{" "}
+          <span className="font-mono text-foreground">
+            src/lib/scheduler/core.ts
+          </span>
+          ， UI 只负责展示和触发状态变化。
         </div>
       </DialogContent>
     </Dialog>
@@ -568,7 +685,12 @@ function NumberField({
   return (
     <div className="flex flex-col gap-2">
       <Label htmlFor={id}>{label}</Label>
-      <Input id={id} type="number" aria-invalid={invalid} {...form.register(name)} />
+      <Input
+        id={id}
+        type="number"
+        aria-invalid={invalid}
+        {...form.register(name)}
+      />
     </div>
   );
 }
@@ -599,7 +721,13 @@ function SeedField({
           aria-invalid={Boolean(form.formState.errors.seed)}
           {...form.register("seed")}
         />
-        <Button type="button" variant="outline" size="icon" aria-label="随机种子" onClick={randomizeSeed}>
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          aria-label="随机种子"
+          onClick={randomizeSeed}
+        >
           <Shuffle aria-hidden="true" />
         </Button>
       </div>
@@ -638,8 +766,12 @@ function QueuePanel({
                   process={process}
                   algorithm={algorithm}
                   candidate={process.slot === candidateSlot}
-                  statusOverride={process.slot === candidateSlot ? "running" : undefined}
-                  statusTone={process.slot === candidateSlot ? "candidate" : undefined}
+                  statusOverride={
+                    process.slot === candidateSlot ? "running" : undefined
+                  }
+                  statusTone={
+                    process.slot === candidateSlot ? "candidate" : undefined
+                  }
                   muted={muted}
                 />
               ))
@@ -676,8 +808,12 @@ function ProcessCard({
       exit={{ opacity: 0, y: -6 }}
       className={[
         "relative overflow-hidden rounded-md border px-3 py-3 text-sm transition-[border-color,box-shadow,background-color]",
-        running ? "border-[#002FA7] bg-[#eaf3ff] shadow-[0_0_0_2px_rgba(0,47,167,0.14)]" : "bg-card",
-        candidate ? "border-[#002FA7]/70 shadow-[0_0_0_1px_rgba(0,47,167,0.12),0_18px_42px_rgba(0,47,167,0.16)]" : "",
+        running
+          ? "border-[#002FA7] bg-[#eaf3ff] shadow-[0_0_0_2px_rgba(0,47,167,0.14)]"
+          : "bg-card",
+        candidate
+          ? "border-[#002FA7]/70 shadow-[0_0_0_1px_rgba(0,47,167,0.12),0_18px_42px_rgba(0,47,167,0.16)]"
+          : "",
         muted ? "bg-muted/60 text-muted-foreground" : "",
       ].join(" ")}
     >
@@ -688,8 +824,13 @@ function ProcessCard({
         />
       ) : null}
       <div className="relative z-10 flex items-center justify-between gap-2">
-        <div className="relative font-mono text-base font-semibold">进程 P{process.name}</div>
-        <StatusBadge status={statusOverride ?? process.status} tone={statusTone} />
+        <div className="relative font-mono text-base font-semibold">
+          进程 P{process.name}
+        </div>
+        <StatusBadge
+          status={statusOverride ?? process.status}
+          tone={statusTone}
+        />
       </div>
       <Separator className="relative z-10 my-2" />
       <div className="relative z-10 grid grid-cols-4 gap-2 font-mono">
@@ -701,12 +842,18 @@ function ProcessCard({
         <MiniStat
           label="priority"
           value={process.priority}
-          ignoredReason={getIgnoredProcessCardFieldReason(algorithm, "priority")}
+          ignoredReason={getIgnoredProcessCardFieldReason(
+            algorithm,
+            "priority",
+          )}
         />
         <MiniStat
           label="remaining"
           value={process.remainingTime}
-          ignoredReason={getIgnoredProcessCardFieldReason(algorithm, "remaining")}
+          ignoredReason={getIgnoredProcessCardFieldReason(
+            algorithm,
+            "remaining",
+          )}
         />
         <MiniStat
           label="next"
@@ -742,13 +889,21 @@ function PcbTable({ processes }: { processes: Array<Pcb | null> }) {
             {processes.map((process, slot) => (
               <TableRow key={slot}>
                 <TableCell className="font-mono">{slot}</TableCell>
-                <TableCell className="font-mono">{process ? `P${process.name}` : "-"}</TableCell>
+                <TableCell className="font-mono">
+                  {process ? `P${process.name}` : "-"}
+                </TableCell>
                 <TableCell>
                   <StatusBadge status={process?.status ?? "free"} />
                 </TableCell>
-                <TableCell className="font-mono">{process?.priority ?? "-"}</TableCell>
-                <TableCell className="font-mono">{process?.remainingTime ?? "-"}</TableCell>
-                <TableCell className="font-mono">{process?.totalTime ?? "-"}</TableCell>
+                <TableCell className="font-mono">
+                  {process?.priority ?? "-"}
+                </TableCell>
+                <TableCell className="font-mono">
+                  {process?.remainingTime ?? "-"}
+                </TableCell>
+                <TableCell className="font-mono">
+                  {process?.totalTime ?? "-"}
+                </TableCell>
                 <TableCell className="font-mono">
                   {process ? formatNullable(process.next) : "-"}
                 </TableCell>
@@ -772,7 +927,9 @@ function KnownProcessTable({
     <Card>
       <CardHeader>
         <CardTitle>所有已知进程</CardTitle>
-        <CardDescription>包含就绪、运行、终止状态与动态到达进程</CardDescription>
+        <CardDescription>
+          包含就绪、运行、终止状态与动态到达进程
+        </CardDescription>
       </CardHeader>
       <CardContent className="overflow-x-auto">
         <Table>
@@ -798,20 +955,40 @@ function KnownProcessTable({
               </TableRow>
             ) : (
               processes.map((process) => {
-                const isRunning = process.slot != null && process.slot === runningSlot;
+                const isRunning =
+                  process.slot != null && process.slot === runningSlot;
                 return (
-                  <TableRowMotion key={`${process.slot ?? "future"}-${process.name}`} running={isRunning}>
-                    <TableCell className="font-mono font-semibold">进程 P{process.name}</TableCell>
+                  <TableRowMotion
+                    key={`${process.slot ?? "future"}-${process.name}`}
+                    running={isRunning}
+                  >
+                    <TableCell className="font-mono font-semibold">
+                      进程 P{process.name}
+                    </TableCell>
                     <TableCell>
                       <StatusBadge status={process.status} />
                     </TableCell>
-                    <TableCell className="font-mono">{process.arrivalTick}</TableCell>
-                    <TableCell className="font-mono">{formatNullable(process.startedTick)}</TableCell>
-                    <TableCell className="font-mono">{formatNullable(process.finishedTick)}</TableCell>
-                    <TableCell className="font-mono">{process.priority}</TableCell>
-                    <TableCell className="font-mono">{process.remainingTime}</TableCell>
-                    <TableCell className="font-mono">{process.totalTime}</TableCell>
-                    <TableCell className="font-mono">{formatNullable(process.next)}</TableCell>
+                    <TableCell className="font-mono">
+                      {process.arrivalTick}
+                    </TableCell>
+                    <TableCell className="font-mono">
+                      {formatNullable(process.startedTick)}
+                    </TableCell>
+                    <TableCell className="font-mono">
+                      {formatNullable(process.finishedTick)}
+                    </TableCell>
+                    <TableCell className="font-mono">
+                      {process.priority}
+                    </TableCell>
+                    <TableCell className="font-mono">
+                      {process.remainingTime}
+                    </TableCell>
+                    <TableCell className="font-mono">
+                      {process.totalTime}
+                    </TableCell>
+                    <TableCell className="font-mono">
+                      {formatNullable(process.next)}
+                    </TableCell>
                   </TableRowMotion>
                 );
               })
@@ -850,10 +1027,17 @@ function TableRowMotion({
       layout
       initial={false}
       animate={{
-        backgroundColor: running ? "rgba(234, 243, 255, 1)" : "rgba(255, 255, 255, 1)",
-        borderColor: running ? "rgba(0, 47, 167, 0.7)" : "rgba(229, 229, 229, 1)",
+        backgroundColor: running
+          ? "rgba(234, 243, 255, 1)"
+          : "rgba(255, 255, 255, 1)",
+        borderColor: running
+          ? "rgba(0, 47, 167, 0.7)"
+          : "rgba(229, 229, 229, 1)",
       }}
-      transition={{ backgroundColor: { duration: 0.18 }, borderColor: { duration: 0.18 } }}
+      transition={{
+        backgroundColor: { duration: 0.18 },
+        borderColor: { duration: 0.18 },
+      }}
       className="border-b border-t"
     >
       {children}
@@ -898,7 +1082,11 @@ function StatusBadge({
   );
 }
 
-function LogTable({ simulator }: { simulator: ReturnType<typeof useSchedulerStore.getState>["simulator"] }) {
+function LogTable({
+  simulator,
+}: {
+  simulator: ReturnType<typeof useSchedulerStore.getState>["simulator"];
+}) {
   return (
     <Card>
       <CardHeader>
@@ -929,13 +1117,19 @@ function LogTable({ simulator }: { simulator: ReturnType<typeof useSchedulerStor
               simulator.logs.map((log) => (
                 <TableRow key={log.id}>
                   <TableCell className="font-mono">{log.tick}</TableCell>
-                  <TableCell className="font-mono">{log.pid ? `P${log.pid}` : "-"}</TableCell>
-                  <TableCell className="font-mono">{log.priority ?? "-"}</TableCell>
+                  <TableCell className="font-mono">
+                    {log.pid ? `P${log.pid}` : "-"}
+                  </TableCell>
+                  <TableCell className="font-mono">
+                    {log.priority ?? "-"}
+                  </TableCell>
                   <TableCell className="font-mono">
                     {log.remainingBefore ?? "-"} → {log.remainingAfter ?? "-"}
                   </TableCell>
                   <TableCell className="min-w-56">{log.reason}</TableCell>
-                  <TableCell className="font-mono">{log.readyQueue.join(", ") || "-"}</TableCell>
+                  <TableCell className="font-mono">
+                    {log.readyQueue.join(", ") || "-"}
+                  </TableCell>
                   <TableCell className="font-mono">
                     {log.terminatedQueue.join(", ") || "-"}
                   </TableCell>
@@ -958,13 +1152,7 @@ function Stat({ label, value }: { label: string; value: number }) {
   );
 }
 
-function GlossaryGroup({
-  title,
-  items,
-}: {
-  title: string;
-  items: string[];
-}) {
+function GlossaryGroup({ title, items }: { title: string; items: string[] }) {
   return (
     <section className="rounded-md border bg-muted/25 p-3">
       <div className="mb-2 flex items-center gap-2">
@@ -1000,13 +1188,18 @@ function MiniStat({
     "truncate font-normal tabular-nums",
     ignoredReason ? "text-muted-foreground/40" : "",
   ].join(" ");
-  const tooltipText = getProcessCardFieldTooltip(label as ProcessCardField, ignoredReason);
+  const tooltipText = getProcessCardFieldTooltip(
+    label as ProcessCardField,
+    ignoredReason,
+  );
 
   return (
     <div className="min-w-0" title={label}>
       <Tooltip>
         <TooltipTrigger
-          render={<span className={labelClassName} aria-label={`${label} 说明`} />}
+          render={
+            <span className={labelClassName} aria-label={`${label} 说明`} />
+          }
         >
           {label}
         </TooltipTrigger>
@@ -1017,7 +1210,9 @@ function MiniStat({
   );
 }
 
-function getIgnoredProcessCardFields(algorithm: SchedulerAlgorithm): Set<ProcessCardField> {
+function getIgnoredProcessCardFields(
+  algorithm: SchedulerAlgorithm,
+): Set<ProcessCardField> {
   if (algorithm === "priority") {
     return new Set();
   }
@@ -1047,14 +1242,17 @@ function getProcessCardFieldTooltip(
     next: "next 对应静态链表中的下一个槽位，用来连接 readyQueue。",
   };
 
-  return ignoredReason ? `${explanations[field]} ${ignoredReason}` : explanations[field];
+  return ignoredReason
+    ? `${explanations[field]} ${ignoredReason}`
+    : explanations[field];
 }
 
 function getTableGlossaryTooltip(field: TableGlossaryField) {
   const explanations: Record<TableGlossaryField, string> = {
     process: "process 对应进程标识，页面中显示为进程 P 加 PID。",
     pid: "pid 对应进程标识符，用于区分不同 process。",
-    status: "status 对应进程状态，包括 pending、ready、running、terminated、free。",
+    status:
+      "status 对应进程状态，包括 pending、ready、running、terminated、free。",
     arrival: "arrival 对应 arrivalTick，表示 process 到达模拟器的时刻。",
     start: "start 对应 startedTick，表示 process 第一次占用 CPU 的时刻。",
     finish: "finish 对应 finishedTick，表示 process 进入 terminated 的时刻。",
