@@ -47,7 +47,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -114,6 +113,7 @@ const configSchema = z
 
 type ConfigFormInput = z.input<typeof configSchema>;
 type ConfigForm = z.output<typeof configSchema>;
+type ConfigFieldName = keyof ConfigFormInput;
 type ProcessCardField = "slot" | "priority" | "remaining" | "next";
 type TableGlossaryField =
   | "process"
@@ -242,29 +242,38 @@ export function SchedulerDashboard() {
               label="随机"
               onClick={randomizeAndApplyConfig}
               icon={Shuffle}
+              tooltip="重新生成随机种子并应用当前配置，用来得到一组新的可复现实验数据。"
             />
             <ActionButton
               label="单步"
               onClick={() => step(true)}
               icon={SkipForward}
+              tooltip="执行一次调度；调度前会按进程出现概率尝试生成新进程。"
             />
             <ActionButton
               label={isAutoRunning ? "暂停" : "自动运行"}
               onClick={() => setIsAutoRunning((value) => !value)}
               icon={isAutoRunning ? CirclePause : Play}
               variant={isAutoRunning ? "outline" : "default"}
+              tooltip={
+                isAutoRunning
+                  ? "暂停当前自动调度。"
+                  : "按固定间隔连续执行单步调度，直到任务完成或手动暂停。"
+              }
             />
             <ActionButton
               label="运行到底"
               onClick={runToEnd}
               icon={ListRestart}
               variant="outline"
+              tooltip="连续执行调度直到就绪队列和未来进程队列都为空。"
             />
             <ActionButton
               label="重置"
               onClick={form.handleSubmit(applyConfig)}
               icon={RotateCcw}
               variant="outline"
+              tooltip="使用当前配置重新初始化模拟器，清空本轮调度过程。"
             />
             <ProjectInfoDialog />
           </div>
@@ -390,7 +399,7 @@ export function SchedulerDashboard() {
                           form={form}
                         />
                         <NumberField
-                          label="动态概率"
+                          label="进程出现概率"
                           name="dynamicArrivalChance"
                           form={form}
                         />
@@ -595,26 +604,33 @@ export function SchedulerDashboard() {
 }
 
 function ProjectInfoDialog() {
+  const [isOpen, setIsOpen] = useState(false);
+
   return (
-    <Dialog>
-      <DialogTrigger
-        render={
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            aria-label="项目信息"
-          />
-        }
-      >
-        <CircleHelp aria-hidden="true" />
-      </DialogTrigger>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              aria-label="项目信息"
+              onClick={() => setIsOpen(true)}
+            />
+          }
+        >
+          <CircleHelp aria-hidden="true" />
+        </TooltipTrigger>
+        <TooltipContent>查看项目技术栈、核心文件和模拟器定位。</TooltipContent>
+      </Tooltip>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>项目信息</DialogTitle>
           <DialogDescription>
-            单处理器进程调度模拟器，用于展示
-            PCB、就绪队列、运行指针和四种调度算法。
+            这是华南农业大学Tim2354的操作系统综合实验项目。
+            <br />
+            采用了现代开发技术栈，如下：
           </DialogDescription>
         </DialogHeader>
 
@@ -626,19 +642,12 @@ function ProjectInfoDialog() {
             label="UI"
             value="Tailwind CSS / shadcn-ui / Base UI / lucide-react"
           />
+          <ProjectInfoRow label="组件模板" value="shadcn/ui Blocks" />
           <ProjectInfoRow label="动效与图表" value="motion / Recharts" />
           <ProjectInfoRow
             label="验证与分发"
             value="Vitest / Playwright / Electron"
           />
-        </div>
-
-        <div className="rounded-md border bg-muted/30 px-3 py-2 text-sm leading-6 text-muted-foreground">
-          调度核心位于{" "}
-          <span className="font-mono text-foreground">
-            src/lib/scheduler/core.ts
-          </span>
-          ， UI 只负责展示和触发状态变化。
         </div>
       </DialogContent>
     </Dialog>
@@ -658,18 +667,51 @@ function ActionButton({
   label,
   onClick,
   icon: Icon,
+  tooltip,
   variant = "default",
 }: {
   label: string;
   onClick: () => void;
   icon: typeof Play;
+  tooltip: string;
   variant?: "default" | "outline";
 }) {
   return (
-    <Button type="button" variant={variant} onClick={onClick}>
-      <Icon data-icon="inline-start" aria-hidden="true" />
-      {label}
-    </Button>
+    <Tooltip>
+      <TooltipTrigger
+        render={<Button type="button" variant={variant} onClick={onClick} />}
+      >
+        <Icon data-icon="inline-start" aria-hidden="true" />
+        {label}
+      </TooltipTrigger>
+      <TooltipContent>{tooltip}</TooltipContent>
+    </Tooltip>
+  );
+}
+
+function ConfigLabel({
+  htmlFor,
+  label,
+  name,
+}: {
+  htmlFor: string;
+  label: string;
+  name: ConfigFieldName;
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <Label
+            htmlFor={htmlFor}
+            className="w-fit cursor-help underline-offset-4 hover:underline"
+          />
+        }
+      >
+        {label}
+      </TooltipTrigger>
+      <TooltipContent>{getConfigFieldTooltip(name)}</TooltipContent>
+    </Tooltip>
   );
 }
 
@@ -679,14 +721,14 @@ function NumberField({
   form,
 }: {
   label: string;
-  name: keyof ConfigFormInput;
+  name: ConfigFieldName;
   form: UseFormReturn<ConfigFormInput, unknown, ConfigForm>;
 }) {
   const id = `config-${name}`;
   const invalid = Boolean(form.formState.errors[name]);
   return (
     <div className="flex flex-col gap-2">
-      <Label htmlFor={id}>{label}</Label>
+      <ConfigLabel htmlFor={id} label={label} name={name} />
       <Input
         id={id}
         type="number"
@@ -715,7 +757,7 @@ function SeedField({
 
   return (
     <div className="flex flex-col gap-2">
-      <Label htmlFor="config-seed">随机种子</Label>
+      <ConfigLabel htmlFor="config-seed" label="随机种子" name="seed" />
       <div className="flex gap-2">
         <Input
           id="config-seed"
@@ -723,15 +765,22 @@ function SeedField({
           aria-invalid={Boolean(form.formState.errors.seed)}
           {...form.register("seed")}
         />
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          aria-label="随机种子"
-          onClick={randomizeSeed}
-        >
-          <Shuffle aria-hidden="true" />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                aria-label="生成随机种子"
+                onClick={randomizeSeed}
+              />
+            }
+          >
+            <Shuffle aria-hidden="true" />
+          </TooltipTrigger>
+          <TooltipContent>生成一个新的随机种子。</TooltipContent>
+        </Tooltip>
       </div>
     </div>
   );
@@ -1255,6 +1304,24 @@ function getProcessCardFieldTooltip(
   return ignoredReason
     ? `${explanations[field]} ${ignoredReason}`
     : explanations[field];
+}
+
+function getConfigFieldTooltip(field: ConfigFieldName) {
+  const explanations: Record<ConfigFieldName, string> = {
+    capacity:
+      "PCB 区最多能同时容纳的进程控制块数量，达到上限后不能继续创建新进程。",
+    initialProcesses: "模拟开始时立即进入就绪队列的进程数量。",
+    minPriority: "随机生成进程时可取到的最小优先数。",
+    maxPriority:
+      "随机生成进程时可取到的最大优先数。优先数调度中数值越大越先运行。",
+    minTime: "随机生成进程时可取到的最小运行时间，单位是时间片。",
+    maxTime: "随机生成进程时可取到的最大运行时间，单位是时间片。",
+    dynamicArrivalChance:
+      "每次单步或自动调度前，随机出现新进程的概率，取值范围是 0 到 100。",
+    seed: "用于生成可复现随机进程数据的种子；种子相同，初始数据通常相同。",
+  };
+
+  return explanations[field];
 }
 
 function getTableGlossaryTooltip(field: TableGlossaryField) {
