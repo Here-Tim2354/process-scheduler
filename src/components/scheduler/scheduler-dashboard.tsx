@@ -84,6 +84,7 @@ import type {
   Pcb,
   SchedulerAlgorithm,
   SchedulerConfig,
+  TimelineSegment,
 } from "@/lib/scheduler/types";
 import { useSchedulerStore } from "@/stores/scheduler-store";
 
@@ -115,6 +116,7 @@ type ConfigFormInput = z.input<typeof configSchema>;
 type ConfigForm = z.output<typeof configSchema>;
 type ConfigFieldName = keyof ConfigFormInput;
 type ProcessCardField = "slot" | "priority" | "remaining" | "next";
+type ResultTab = "timeline" | "pcb" | "log";
 type TableGlossaryField =
   | "process"
   | "pid"
@@ -126,14 +128,20 @@ type TableGlossaryField =
   | "priority"
   | "remaining"
   | "totalTime"
-  | "next";
+  | "next"
+  | "timeRange"
+  | "duration"
+  | "slices";
 
 const algorithms = Object.keys(ALGORITHM_LABELS) as SchedulerAlgorithm[];
+const tableViewportClassName =
+  "h-[360px] overflow-auto [scrollbar-gutter:stable] [&_[data-slot=table-container]]:overflow-visible";
 
 export function SchedulerDashboard() {
   const { simulator, reset, setAlgorithm, step, runToEnd } =
     useSchedulerStore();
   const [isAutoRunning, setIsAutoRunning] = useState(false);
+  const [resultTab, setResultTab] = useState<ResultTab>("timeline");
   const form = useForm<ConfigFormInput, unknown, ConfigForm>({
     resolver: zodResolver(configSchema),
     defaultValues: DEFAULT_CONFIG,
@@ -502,40 +510,45 @@ export function SchedulerDashboard() {
               />
             </div>
 
-            <Tabs defaultValue="timeline" className="min-w-0">
-              <TabsList>
-                <TabsTrigger value="timeline">时间线</TabsTrigger>
-                <TabsTrigger value="pcb">PCB</TabsTrigger>
-                <TabsTrigger value="log">日志</TabsTrigger>
+            <Tabs
+              value={resultTab}
+              onValueChange={(value) => setResultTab(value as ResultTab)}
+              className="mt-5 min-w-0"
+            >
+              <TabsList
+                variant="line"
+                className="grid h-auto w-full grid-cols-3 bg-transparent p-0"
+              >
+                <ResultTabTrigger
+                  value="timeline"
+                  label="时间线"
+                  activeTab={resultTab}
+                  className="justify-self-start"
+                />
+                <ResultTabTrigger
+                  value="pcb"
+                  label="PCB"
+                  activeTab={resultTab}
+                  className="justify-self-center"
+                />
+                <ResultTabTrigger
+                  value="log"
+                  label="日志"
+                  activeTab={resultTab}
+                  className="justify-self-end"
+                />
               </TabsList>
               <TabsContent value="timeline" className="mt-4">
                 <div className="grid gap-4 xl:grid-cols-[1.4fr_1fr]">
                   <Card>
                     <CardHeader>
                       <CardTitle>调度时间线</CardTitle>
-                      <CardDescription>每段代表一次处理器占用</CardDescription>
+                      <CardDescription>
+                        连续运行片段已合并，共 {simulator.timeline.length} 次处理器占用
+                      </CardDescription>
                     </CardHeader>
-                    <CardContent>
-                      <div className="flex min-h-36 flex-wrap content-start gap-2">
-                        {simulator.timeline.length === 0 ? (
-                          <EmptyText text="尚未调度" />
-                        ) : (
-                          simulator.timeline.map((segment) => (
-                            <motion.div
-                              layout
-                              key={segment.id}
-                              className="min-w-24 rounded-md border bg-muted px-3 py-2 font-mono text-sm"
-                            >
-                              <div className="font-semibold">
-                                P{segment.pid}
-                              </div>
-                              <div className="text-muted-foreground">
-                                {segment.start} - {segment.end}
-                              </div>
-                            </motion.div>
-                          ))
-                        )}
-                      </div>
+                    <CardContent className={tableViewportClassName}>
+                      <TimelineTable segments={simulator.timeline} />
                     </CardContent>
                   </Card>
 
@@ -651,6 +664,41 @@ function ProjectInfoDialog() {
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function ResultTabTrigger({
+  value,
+  label,
+  activeTab,
+  className,
+}: {
+  value: ResultTab;
+  label: string;
+  activeTab: ResultTab;
+  className: string;
+}) {
+  const isActive = activeTab === value;
+
+  return (
+    <TabsTrigger
+      value={value}
+      className={[
+        "h-auto w-fit flex-none rounded-md px-4 py-1.5 text-base after:hidden data-active:bg-muted/60",
+        className,
+      ].join(" ")}
+    >
+      <span className="relative inline-flex pb-1">
+        {label}
+        {isActive ? (
+          <motion.span
+            layoutId="scheduler-result-tab-underline"
+            className="absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-foreground"
+            transition={{ type: "spring", stiffness: 520, damping: 42 }}
+          />
+        ) : null}
+      </span>
+    </TabsTrigger>
   );
 }
 
@@ -929,7 +977,7 @@ function PcbTable({ processes }: { processes: Array<Pcb | null> }) {
         <CardTitle>PCB 明细</CardTitle>
         <CardDescription>数组模拟有限 PCB 区</CardDescription>
       </CardHeader>
-      <CardContent className="overflow-x-auto">
+      <CardContent className={tableViewportClassName}>
         <Table>
           <TableHeader>
             <TableRow>
@@ -971,6 +1019,84 @@ function PcbTable({ processes }: { processes: Array<Pcb | null> }) {
       </CardContent>
     </Card>
   );
+}
+
+type CompactedTimelineSegment = {
+  id: string;
+  pid: number;
+  start: number;
+  end: number;
+  slices: number;
+};
+
+function TimelineTable({ segments }: { segments: TimelineSegment[] }) {
+  const compactedSegments = compactTimelineSegments(segments);
+
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHeadWithTooltip field="process" />
+          <TableHeadWithTooltip field="timeRange" />
+          <TableHeadWithTooltip field="duration" />
+          <TableHeadWithTooltip field="slices" />
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {compactedSegments.length === 0 ? (
+          <TableRow>
+            <TableCell colSpan={4}>
+              <EmptyText text="尚未调度" />
+            </TableCell>
+          </TableRow>
+        ) : (
+          compactedSegments.map((segment) => (
+            <TableRow key={segment.id}>
+              <TableCell className="font-mono font-semibold">
+                进程 P{segment.pid}
+              </TableCell>
+              <TableCell className="font-mono">
+                {segment.start} - {segment.end}
+              </TableCell>
+              <TableCell className="font-mono">
+                {segment.end - segment.start}
+              </TableCell>
+              <TableCell className="font-mono">{segment.slices}</TableCell>
+            </TableRow>
+          ))
+        )}
+      </TableBody>
+    </Table>
+  );
+}
+
+function compactTimelineSegments(
+  segments: TimelineSegment[],
+): CompactedTimelineSegment[] {
+  return segments.reduce<CompactedTimelineSegment[]>((items, segment) => {
+    const previous = items[items.length - 1];
+    if (previous && previous.pid === segment.pid && previous.end === segment.start) {
+      return [
+        ...items.slice(0, -1),
+        {
+          ...previous,
+          end: segment.end,
+          slices: previous.slices + 1,
+        },
+      ];
+    }
+
+    return [
+      ...items,
+      {
+        id: segment.id,
+        pid: segment.pid,
+        start: segment.start,
+        end: segment.end,
+        slices: 1,
+      },
+    ];
+  }, []);
 }
 
 function KnownProcessTable({
@@ -1152,7 +1278,7 @@ function LogTable({
         <CardTitle>调度日志</CardTitle>
         <CardDescription>最近 {simulator.logs.length} 条</CardDescription>
       </CardHeader>
-      <CardContent className="overflow-x-auto">
+      <CardContent className={tableViewportClassName}>
         <Table>
           <TableHeader>
             <TableRow>
@@ -1338,6 +1464,9 @@ function getTableGlossaryTooltip(field: TableGlossaryField) {
     remaining: "remaining 对应 remainingTime，表示 process 还需要运行的时间。",
     totalTime: "totalTime 对应 process 创建时生成的初始运行时间。",
     next: "next 对应静态链表中的下一个 slot，用来连接 readyQueue。",
+    timeRange: "timeRange 表示该进程连续占用处理器的起止 tick。",
+    duration: "duration 表示这段连续处理器占用持续了多少个 tick。",
+    slices: "slices 表示这行合并了多少次连续调度片段。",
   };
 
   return explanations[field];

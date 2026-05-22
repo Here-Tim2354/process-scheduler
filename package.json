@@ -1,6 +1,8 @@
 {
   "name": "process-scheduler",
   "version": "0.1.0",
+  "description": "Single-processor process scheduling simulator.",
+  "author": "Tim2354",
   "private": true,
   "main": "electron/main.js",
   "scripts": {
@@ -8,7 +10,7 @@
     "build": "next build",
     "build:electron": "node scripts/build-electron.mjs",
     "electron": "npm run build:electron && electron .",
-    "dist": "npm run build:electron && electron-builder --win portable",
+    "dist": "npm run build:electron && electron-builder --win portable --x64 && electron-builder --win portable --ia32",
     "start": "next start",
     "lint": "eslint",
     "smoke": "node scripts/smoke.mjs",
@@ -71,13 +73,10 @@
       "verifyUpdateCodeSignature": false,
       "target": [
         {
-          "target": "portable",
-          "arch": [
-            "x64"
-          ]
+          "target": "portable"
         }
       ],
-      "artifactName": "${productName}-${version}-${arch}.${ext}"
+      "artifactName": "process-scheduler-${version}-win-${arch}-portable.${ext}"
     }
   }
 }
