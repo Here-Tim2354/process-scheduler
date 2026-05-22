@@ -482,6 +482,7 @@ export function SchedulerDashboard() {
                 processes={readyProcesses}
                 algorithm={simulator.algorithm}
                 candidateSlot={candidateSlot}
+                hasSchedulerStarted={simulator.timeline.length > 0}
               />
               <QueuePanel
                 title="终止队列"
@@ -740,12 +741,14 @@ function QueuePanel({
   processes,
   algorithm,
   candidateSlot = null,
+  hasSchedulerStarted = false,
   muted = false,
 }: {
   title: string;
   processes: Pcb[];
   algorithm: SchedulerAlgorithm;
   candidateSlot?: number | null;
+  hasSchedulerStarted?: boolean;
   muted?: boolean;
 }) {
   return (
@@ -767,10 +770,14 @@ function QueuePanel({
                   algorithm={algorithm}
                   candidate={process.slot === candidateSlot}
                   statusOverride={
-                    process.slot === candidateSlot ? "running" : undefined
+                    hasSchedulerStarted && process.slot === candidateSlot
+                      ? "running"
+                      : undefined
                   }
                   statusTone={
-                    process.slot === candidateSlot ? "candidate" : undefined
+                    hasSchedulerStarted && process.slot === candidateSlot
+                      ? "candidate"
+                      : undefined
                   }
                   muted={muted}
                 />

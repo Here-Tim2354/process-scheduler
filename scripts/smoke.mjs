@@ -20,7 +20,11 @@ const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
 
 await page.goto(targetUrl, { waitUntil: "networkidle" });
 const title = await page.locator("h1").textContent();
-await page.getByRole("button", { name: "展开或收起配置" }).click();
+const initialBodyText = await page.locator("body").innerText();
+if (initialBodyText.includes("运行中")) {
+  throw new Error("Expected reset state to show only ready processes, but found 运行中");
+}
+await page.locator('button[aria-label="展开或收起配置"]').click();
 const capacityInput = page.getByLabel("PCB 容量");
 await capacityInput.fill("12");
 await page.getByRole("button", { name: "随机", exact: true }).click();
