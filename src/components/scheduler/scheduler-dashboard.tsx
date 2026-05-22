@@ -474,6 +474,7 @@ export function SchedulerDashboard() {
             <KnownProcessTable
               processes={knownProcesses}
               runningSlot={simulator.run}
+              totalProcesses={knownProcesses.length}
             />
 
             <div className="grid gap-4 xl:grid-cols-2">
@@ -926,16 +927,18 @@ function PcbTable({ processes }: { processes: Array<Pcb | null> }) {
 function KnownProcessTable({
   processes,
   runningSlot,
+  totalProcesses,
 }: {
   processes: Array<Pcb | FutureProcess>;
   runningSlot: number | null;
+  totalProcesses: number;
 }) {
   return (
     <Card>
       <CardHeader>
         <CardTitle>所有已知进程</CardTitle>
         <CardDescription>
-          包含就绪、运行、终止状态与动态到达进程
+          包含就绪、运行、终止状态与动态到达进程，共计 {totalProcesses} 个进程
         </CardDescription>
       </CardHeader>
       <CardContent className="overflow-x-auto">

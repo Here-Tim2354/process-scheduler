@@ -1,4 +1,4 @@
-import { nextRandom, normalizeSeed, randomInt } from "./random";
+import { mixSeed, nextRandom, normalizeSeed, randomInt } from "./random";
 import type {
   CreateProcessInput,
   FutureProcess,
@@ -402,13 +402,17 @@ function appendLog(
 
 function generateKnownProcesses(config: SchedulerConfig) {
   let seed = normalizeSeed(config.seed);
+  const processCount = randomInt(mixSeed(seed), 1, config.capacity);
+  seed = processCount.seed;
+  const totalProcesses = processCount.value;
+  const initialProcesses = Math.min(config.initialProcesses, totalProcesses);
   const usedPids: number[] = [];
   const futureQueue: FutureProcess[] = [];
   let futureArrivalTick = 0;
   const maxArrivalGap =
     config.dynamicArrivalChance <= 0 ? 6 : Math.max(1, Math.round(100 / config.dynamicArrivalChance));
 
-  for (let index = 0; index < config.capacity; index += 1) {
+  for (let index = 0; index < totalProcesses; index += 1) {
     const pid = nextUniquePid(seed, usedPids);
     seed = pid.seed;
     usedPids.push(pid.value);
@@ -419,7 +423,7 @@ function generateKnownProcesses(config: SchedulerConfig) {
     const time = randomInt(seed, config.minTime, config.maxTime);
     seed = time.seed;
 
-    if (index >= config.initialProcesses) {
+    if (index >= initialProcesses) {
       const gap = randomInt(seed, 1, maxArrivalGap);
       seed = gap.seed;
       futureArrivalTick += gap.value;
@@ -434,7 +438,7 @@ function generateKnownProcesses(config: SchedulerConfig) {
       remainingTime: time.value,
       totalTime: time.value,
       next: null,
-      arrivalTick: index < config.initialProcesses ? 0 : futureArrivalTick,
+      arrivalTick: index < initialProcesses ? 0 : futureArrivalTick,
       startedTick: null,
       finishedTick: null,
     });

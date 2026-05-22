@@ -24,6 +24,9 @@ const initialBodyText = await page.locator("body").innerText();
 if (initialBodyText.includes("运行中")) {
   throw new Error("Expected reset state to show only ready processes, but found 运行中");
 }
+if (!/共计 \d+ 个进程/.test(initialBodyText)) {
+  throw new Error("Expected known process table to show total process count");
+}
 await page.locator('button[aria-label="展开或收起配置"]').click();
 const capacityInput = page.getByLabel("PCB 容量");
 await capacityInput.fill("12");

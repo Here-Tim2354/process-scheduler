@@ -2,11 +2,26 @@ import { describe, expect, it } from "vitest";
 import {
   createInitialState,
   createProcess,
+  getAllKnownProcesses,
   runUntilComplete,
   stepScheduler,
 } from "./core";
 
 describe("scheduler core", () => {
+  it("generates a positive known process count within PCB capacity", () => {
+    const counts = Array.from({ length: 12 }, (_, index) => {
+      const state = createInitialState("round-robin", {
+        capacity: 10,
+        initialProcesses: 10,
+        seed: 20260521 + index,
+      });
+      return getAllKnownProcesses(state).length;
+    });
+
+    expect(counts.every((count) => count > 0 && count <= 10)).toBe(true);
+    expect(new Set(counts).size).toBeGreaterThan(1);
+  });
+
   it("creates processes through limited PCB slots and reports capacity", () => {
     let state = createInitialState("round-robin", {
       capacity: 2,

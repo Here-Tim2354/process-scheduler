@@ -14,6 +14,14 @@ export function nextRandom(seed: number) {
   };
 }
 
+export function mixSeed(seed: number) {
+  let mixed = normalizeSeed(seed);
+  mixed = Math.imul(mixed ^ (mixed >>> 16), 0x45d9f3b);
+  mixed = Math.imul(mixed ^ (mixed >>> 16), 0x45d9f3b);
+  mixed = mixed ^ (mixed >>> 16);
+  return normalizeSeed(mixed);
+}
+
 export function randomInt(seed: number, min: number, max: number) {
   const safeMin = Math.ceil(Math.min(min, max));
   const safeMax = Math.floor(Math.max(min, max));
