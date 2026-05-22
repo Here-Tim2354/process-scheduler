@@ -1,4 +1,8 @@
 import { mixSeed, nextRandom, normalizeSeed, randomInt } from "./random";
+import {
+  getAlgorithmDefinition,
+  insertReadyByAlgorithm,
+} from "./algorithms";
 import type {
   CreateProcessInput,
   FutureProcess,
@@ -13,6 +17,8 @@ import type {
   TimelineSegment,
 } from "./types";
 
+export { ALGORITHM_LABELS } from "./algorithms";
+
 export const DEFAULT_CONFIG: SchedulerConfig = {
   capacity: 10,
   initialProcesses: 5,
@@ -22,13 +28,6 @@ export const DEFAULT_CONFIG: SchedulerConfig = {
   maxTime: 8,
   dynamicArrivalChance: 15,
   seed: 20260521,
-};
-
-export const ALGORITHM_LABELS: Record<SchedulerAlgorithm, string> = {
-  "round-robin": "时间片轮转 ROUND-ROBIN",
-  priority: "优先数 PRIORITY",
-  spf: "最短进程优先 SPF",
-  srtf: "最短剩余时间优先 SRTF",
 };
 
 export function createInitialState(
@@ -151,7 +150,7 @@ export function createProcess(
   pcbArea[slot] = process;
   const freeQueue = state.freeQueue.slice(1);
   const futureQueue = state.futureQueue.slice(1);
-  const readyQueue = insertReady(state.algorithm, state.readyQueue, pcbArea, slot);
+  const readyQueue = insertReadyByAlgorithm(state.algorithm, state.readyQueue, pcbArea, slot);
   const linkedArea = relinkReadyQueue(pcbArea, readyQueue);
 
   return {
@@ -233,7 +232,8 @@ export function stepScheduler(state: SchedulerState, options: StepOptions = {}) 
   const pcbArea = working.pcbArea.slice();
   const remainingBefore = process.remainingTime;
   const priorityBefore = process.priority;
-  const runDuration = working.algorithm === "spf" ? process.remainingTime : 1;
+  const algorithm = getAlgorithmDefinition(working.algorithm);
+  const runDuration = algorithm.getRunDuration(process);
   const updatedProcess: Pcb = {
     ...process,
     status: "running",
@@ -241,14 +241,7 @@ export function stepScheduler(state: SchedulerState, options: StepOptions = {}) 
   };
   pcbArea[slot] = updatedProcess;
 
-  const afterRun: Pcb = {
-    ...updatedProcess,
-    priority:
-      working.algorithm === "priority"
-        ? Math.max(0, updatedProcess.priority - 1)
-        : updatedProcess.priority,
-    remainingTime: Math.max(0, updatedProcess.remainingTime - runDuration),
-  };
+  const afterRun = algorithm.updateAfterRun(updatedProcess, runDuration);
 
   const nextTick = working.tick + runDuration;
   const timeline: TimelineSegment = {
@@ -272,28 +265,14 @@ export function stepScheduler(state: SchedulerState, options: StepOptions = {}) 
       next: null,
     };
     terminatedQueue = [...terminatedQueue, slot];
-    reason =
-      working.algorithm === "spf"
-        ? "非抢占运行至结束"
-        : createdDuringStep.length > 0
-          ? `运行一个时间片后终止；动态创建 P${createdDuringStep.join(", P")}`
-          : "运行一个时间片后终止";
+    reason = algorithm.getTerminationReason(createdDuringStep);
   } else {
     pcbArea[slot] = {
       ...afterRun,
       status: "ready",
     };
-    readyQueue = insertReady(working.algorithm, readyQueue, pcbArea, slot);
-    reason =
-      working.algorithm === "round-robin"
-        ? "时间片用尽，回到队尾"
-        : working.algorithm === "priority"
-          ? "优先数与剩余时间各减 1，按优先数回队"
-          : "剩余时间减 1，按剩余时间回队";
-
-    if (createdDuringStep.length > 0) {
-      reason = `${reason}；动态创建 P${createdDuringStep.join(", P")}`;
-    }
+    readyQueue = insertReadyByAlgorithm(working.algorithm, readyQueue, pcbArea, slot);
+    reason = algorithm.getRequeueReason(createdDuringStep);
   }
 
   const linkedArea = relinkReadyQueue(pcbArea, readyQueue);
@@ -347,7 +326,7 @@ export function getAllKnownProcesses(state: SchedulerState) {
 
 export function switchAlgorithm(state: SchedulerState, algorithm: SchedulerAlgorithm) {
   const readyQueue = state.readyQueue.reduce<number[]>(
-    (queue, slot) => insertReady(algorithm, queue, state.pcbArea, slot),
+    (queue, slot) => insertReadyByAlgorithm(algorithm, queue, state.pcbArea, slot),
     [],
   );
   return {
@@ -490,7 +469,7 @@ function allocateFutureProcess(
   pcbArea[slot] = process;
   const freeQueue = state.freeQueue.slice(1);
   const futureQueue = state.futureQueue.filter((item) => item.id !== futureProcess.id);
-  const readyQueue = insertReady(state.algorithm, state.readyQueue, pcbArea, slot);
+  const readyQueue = insertReadyByAlgorithm(state.algorithm, state.readyQueue, pcbArea, slot);
   const linkedArea = relinkReadyQueue(pcbArea, readyQueue);
 
   return {
@@ -506,34 +485,6 @@ function allocateFutureProcess(
     },
     process,
   };
-}
-
-function insertReady(
-  algorithm: SchedulerAlgorithm,
-  queue: number[],
-  pcbArea: Array<Pcb | null>,
-  slot: number,
-) {
-  const nextQueue = [...queue, slot];
-  if (algorithm === "round-robin") {
-    return nextQueue;
-  }
-
-  return nextQueue.sort((leftSlot, rightSlot) => {
-    const left = pcbArea[leftSlot];
-    const right = pcbArea[rightSlot];
-    if (!left || !right) {
-      return left ? -1 : 1;
-    }
-
-    if (algorithm === "priority") {
-      return right.priority - left.priority || left.arrivalTick - right.arrivalTick || left.slot - right.slot;
-    }
-
-    const leftTime = algorithm === "spf" ? left.totalTime : left.remainingTime;
-    const rightTime = algorithm === "spf" ? right.totalTime : right.remainingTime;
-    return leftTime - rightTime || left.arrivalTick - right.arrivalTick || left.slot - right.slot;
-  });
 }
 
 function relinkReadyQueue(pcbArea: Array<Pcb | null>, readyQueue: number[]) {
