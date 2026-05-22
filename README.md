@@ -19,7 +19,7 @@
 
 本项目只分发 portable 版本。下载后双击运行，不需要安装。
 
-不支持 Windows 7 / 8 / 8.1。当前 Electron 主线已经移除这些系统的支持，继续兼容会牺牲 Chromium 安全更新。
+不支持 Windows 7 / 8 / 8.1。因为现在 Electron 已经移除这些系统的支持
 
 ### 二、从源码构建
 
@@ -101,24 +101,6 @@ wiki/
   requirement/           课程题目与要求
 ```
 
-## 构建分发
-
-本仓库按 GitHub Release 分发可执行文件。源码仓库只保存代码、文档和演示素材；`dist/`、`out/`、`.next/` 这类构建产物不进入 Git。
-
-构建 Windows portable：
-
-```bash
-npm run dist
-```
-
-这条命令会先执行 Electron 目标的 Next.js 构建，再通过 `electron-builder` 生成两个文件：
-
-```txt
-dist/process-scheduler-0.1.0-win-x64-portable.exe
-dist/process-scheduler-0.1.0-win-ia32-portable.exe
-```
-
-Release 上传时同时附带 SHA256 校验文件，方便确认下载文件没有损坏。
 
 ## 许可证
 
