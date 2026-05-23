@@ -707,6 +707,7 @@ function ProjectInfoDialog() {
         </div>
         <Button
           className="w-fit"
+          nativeButton={false}
           render={
             <a
               href="https://github.com/Here-Tim2354/process-scheduler"
