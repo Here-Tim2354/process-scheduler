@@ -91,14 +91,50 @@ import { useSchedulerStore } from "@/stores/scheduler-store";
 
 const configSchema = z
   .object({
-    capacity: z.coerce.number().int().min(1).max(30),
-    initialProcesses: z.coerce.number().int().min(0).max(30),
-    minPriority: z.coerce.number().int().min(0).max(99),
-    maxPriority: z.coerce.number().int().min(0).max(99),
-    minTime: z.coerce.number().int().min(1).max(99),
-    maxTime: z.coerce.number().int().min(1).max(99),
-    dynamicArrivalChance: z.coerce.number().int().min(0).max(100),
-    seed: z.coerce.number().int().min(1),
+    capacity: z.coerce
+      .number({ error: "PCB 容量必须是数字" })
+      .int("PCB 容量必须是整数")
+      .min(1, "PCB 容量不能小于 1")
+      .max(30, "PCB 容量不能大于 30"),
+    initialProcesses: z.coerce
+      .number({ error: "初始进程必须是数字" })
+      .int("初始进程必须是整数")
+      .min(0, "初始进程不能小于 0")
+      .max(30, "初始进程不能大于 30"),
+    minPriority: z.coerce
+      .number({ error: "优先数下限必须是数字" })
+      .int("优先数下限必须是整数")
+      .min(0, "优先数下限不能小于 0")
+      .max(99, "优先数下限不能大于 99"),
+    maxPriority: z.coerce
+      .number({ error: "优先数上限必须是数字" })
+      .int("优先数上限必须是整数")
+      .min(0, "优先数上限不能小于 0")
+      .max(99, "优先数上限不能大于 99"),
+    minTime: z.coerce
+      .number({ error: "时间下限必须是数字" })
+      .int("时间下限必须是整数")
+      .min(1, "时间下限不能小于 1")
+      .max(99, "时间下限不能大于 99"),
+    maxTime: z.coerce
+      .number({ error: "时间上限必须是数字" })
+      .int("时间上限必须是整数")
+      .min(1, "时间上限不能小于 1")
+      .max(99, "时间上限不能大于 99"),
+    dynamicArrivalChance: z.coerce
+      .number({ error: "进程出现概率必须是数字" })
+      .int("进程出现概率必须是整数")
+      .min(0, "进程出现概率不能小于 0")
+      .max(100, "进程出现概率不能大于 100"),
+    autoRunInterval: z.coerce
+      .number({ error: "运行间隔必须是数字" })
+      .int("运行间隔必须是整数")
+      .min(100, "运行间隔不能小于 100 ms")
+      .max(3000, "运行间隔不能大于 3000 ms"),
+    seed: z.coerce
+      .number({ error: "随机种子必须是数字" })
+      .int("随机种子必须是整数")
+      .min(1, "随机种子不能小于 1"),
   })
   .refine((data) => data.initialProcesses <= data.capacity, {
     message: "初始进程数不能超过 PCB 容量",
@@ -198,9 +234,9 @@ export function SchedulerDashboard() {
         return;
       }
       useSchedulerStore.getState().step(true);
-    }, 600);
+    }, simulator.config.autoRunInterval);
     return () => window.clearInterval(timer);
-  }, [isAutoRunning]);
+  }, [isAutoRunning, simulator.config.autoRunInterval]);
 
   function applyConfig(values: ConfigForm) {
     const nextConfig = normalizeConfig(values as SchedulerConfig);
@@ -410,6 +446,11 @@ export function SchedulerDashboard() {
                         <NumberField
                           label="进程出现概率"
                           name="dynamicArrivalChance"
+                          form={form}
+                        />
+                        <NumberField
+                          label="运行间隔 ms"
+                          name="autoRunInterval"
                           form={form}
                         />
                         <SeedField form={form} />
@@ -662,10 +703,7 @@ function ProjectInfoDialog() {
             label="验证与分发"
             value="Vitest / Playwright / Electron"
           />
-          <ProjectInfoRow
-            label="核心文件"
-            value="src/lib/scheduler/core.ts"
-          />
+          <ProjectInfoRow label="核心文件" value="src/lib/scheduler/core.ts" />
         </div>
         <Button
           className="w-fit"
@@ -677,8 +715,8 @@ function ProjectInfoDialog() {
             />
           }
         >
-            <GitFork aria-hidden="true" />
-            GitHub
+          <GitFork aria-hidden="true" />
+          GitHub
         </Button>
       </DialogContent>
     </Dialog>
@@ -1457,16 +1495,23 @@ function getProcessCardFieldTooltip(
 function getConfigFieldTooltip(field: ConfigFieldName) {
   const explanations: Record<ConfigFieldName, string> = {
     capacity:
-      "PCB 区最多能同时容纳的进程控制块数量，达到上限后不能继续创建新进程。",
-    initialProcesses: "模拟开始时立即进入就绪队列的进程数量。",
-    minPriority: "随机生成进程时可取到的最小优先数。",
+      "PCB 区最多能同时容纳的进程控制块数量，合法范围是 1 到 30。",
+    initialProcesses:
+      "模拟开始时立即进入就绪队列的进程数量，合法范围是 0 到 PCB 容量。",
+    minPriority:
+      "随机生成进程时可取到的最小优先数，合法范围是 0 到 99，且不能大于优先数上限。",
     maxPriority:
-      "随机生成进程时可取到的最大优先数。优先数调度中数值越大越先运行。",
-    minTime: "随机生成进程时可取到的最小运行时间，单位是时间片。",
-    maxTime: "随机生成进程时可取到的最大运行时间，单位是时间片。",
+      "随机生成进程时可取到的最大优先数，合法范围是 0 到 99。优先数调度中数值越大越先运行。",
+    minTime:
+      "随机生成进程时可取到的最小运行时间，单位是时间片，合法范围是 1 到 99，且不能大于时间上限。",
+    maxTime:
+      "随机生成进程时可取到的最大运行时间，单位是时间片，合法范围是 1 到 99。",
     dynamicArrivalChance:
-      "每次单步或自动调度前，随机出现新进程的概率，取值范围是 0 到 100。",
-    seed: "用于生成可复现随机进程数据的种子；种子相同，初始数据通常相同。",
+      "每次单步或自动调度前，随机出现新进程的概率，合法范围是 0 到 100。",
+    autoRunInterval:
+      "自动运行时两次调度之间的间隔，单位是毫秒，合法范围是 100 到 3000。数值越小，运行越快。",
+    seed:
+      "用于生成可复现随机进程数据的种子，合法范围是大于等于 1 的整数；种子相同，初始数据通常相同。",
   };
 
   return explanations[field];

@@ -37,6 +37,7 @@ export type SchedulerConfig = {
   minTime: number;
   maxTime: number;
   dynamicArrivalChance: number;
+  autoRunInterval: number;
   seed: number;
 };
 

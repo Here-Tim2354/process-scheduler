@@ -27,6 +27,7 @@ export const DEFAULT_CONFIG: SchedulerConfig = {
   minTime: 1,
   maxTime: 8,
   dynamicArrivalChance: 15,
+  autoRunInterval: 1000,
   seed: 20260521,
 };
 
@@ -75,6 +76,7 @@ export function normalizeConfig(config: SchedulerConfig): SchedulerConfig {
     minTime,
     maxTime,
     dynamicArrivalChance: clampInt(config.dynamicArrivalChance, 0, 100),
+    autoRunInterval: clampInt(config.autoRunInterval, 100, 3000),
     seed: normalizeSeed(config.seed),
   };
 }
